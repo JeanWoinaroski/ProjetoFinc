@@ -1,0 +1,52 @@
+# 🔐 Segurança - Não fazer commit desses arquivos
+
+# Backups com dados reais
+backup_*.json
+backup_*.csv
+dados_*.json
+
+# Dados pessoais
+dados_pessoais.*
+financas_*.xlsx
+contas_*.txt
+
+# Arquivo de ambiente (nunca usar em produção)
+.env
+.env.local
+.env.*.local
+
+# Chaves e certificados
+*.key
+*.pem
+*.crt
+*.cert
+
+# Desenvolvimento
+node_modules/
+.DS_Store
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporários
+temp/
+tmp/
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+Thumbs.db
+.DS_Store

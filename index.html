@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <!-- Meta tags de segurança -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self'; 
+                   script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
+                   style-src 'self' 'unsafe-inline';
+                   img-src 'self' data:;
+                   font-src 'self';
+                   connect-src 'self' https:;
+                   frame-ancestors 'none';
+                   base-uri 'self';
+                   form-action 'self';">
+    
+    <title>🔐 Controle Financeiro - Seguro</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Scripts de segurança (PRIMEIRO!) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="seguranca.js"></script>
+    
+    <!-- Scripts de biblioteca -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>� Planejamento Financeiro</h1>
+
+    <!-- Dashboard Resumo -->
+    <div class="secao">
+        <h2>💼 Visão Geral</h2>
+        <div class="resumo">
+            <div class="card entrada">
+                <p>Despesas Fixas</p>
+                <div class="valor">R$ <span id="totalFixas">0.00</span></div>
+            </div>
+            <div class="card saida">
+                <p>Despesas Variáveis</p>
+                <div class="valor">R$ <span id="totalVariaveis">0.00</span></div>
+            </div>
+            <div class="card saldo">
+                <p>Total Planejado</p>
+                <div class="valor">R$ <span id="totalPlanejado">0.00</span></div>
+            </div>
+            <div class="card saldo">
+                <p>Saldo Disponível</p>
+                <div class="valor">R$ <span id="saldoDisponivel">0.00</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Executivo KPIs -->
+    <div class="secao">
+        <h2>📊 Dashboard Executivo</h2>
+        <div class="dashboard-kpi">
+            <div class="kpi-card receita">
+                <div class="kpi-label">💰 Receitas Mês</div>
+                <div class="kpi-valor" id="kpiReceitasMes">R$ 0,00</div>
+                <div class="kpi-subtext" id="kpiReceitasSubtext">+ Renda: R$ 0,00</div>
+            </div>
+            <div class="kpi-card despesa">
+                <div class="kpi-label">📌 Despesas Mês</div>
+                <div class="kpi-valor" id="kpiDespesasMes">R$ 0,00</div>
+                <div class="kpi-subtext" id="kpiDespesasSubtext">Fixas + Variáveis</div>
+            </div>
+            <div class="kpi-card saldo">
+                <div class="kpi-label">💳 Saldo Total</div>
+                <div class="kpi-valor" id="kpiSaldoTotal">R$ 0,00</div>
+                <div class="kpi-subtext" id="kpiSaldoSubtext">Inicial + Diferença</div>
+            </div>
+            <div class="kpi-card percentual">
+                <div class="kpi-label">📈 Taxa Poupança</div>
+                <div class="kpi-valor" id="kpiTaxaPoupanca">0%</div>
+                <div class="kpi-subtext">Do total de receitas</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INVESTIMENTOS -->
+    <div class="secao">
+        <h2>💎 Investimentos</h2>
+        <div class="form-grid">
+            <input type="number" id="valorInvestimento" placeholder="Valor (R$)" step="0.01" min="0">
+            <select id="tipoInvestimento">
+                <option value="">Tipo de Investimento</option>
+                <option value="Renda Fixa">Renda Fixa (CDB, Tesouro)</option>
+                <option value="Ações">Ações</option>
+                <option value="Fundos">Fundos de Investimento</option>
+                <option value="Criptomoedas">Criptomoedas</option>
+                <option value="Imóveis">Imóveis</option>
+                <option value="Poupança">Poupança</option>
+                <option value="Ouro">Ouro/Metais Preciosos</option>
+                <option value="Outro">Outro</option>
+            </select>
+            <input type="text" id="descricaoInvestimento" placeholder="Descrição (ex: CDB Banco X)">
+            <input type="date" id="dataInvestimento">
+            <button onclick="adicionarInvestimento()" class="secondary">➕ Adicionar Investimento</button>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">📊 Resumo de Investimentos</h3>
+            <div class="kpi-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div class="card" style="background: linear-gradient(135deg, rgba(111,221,156,0.1) 0%, #ffffff 100%); border-left: 4px solid #6fdd9c;">
+                    <div style="font-size: 0.85em; color: #666;">Total Investido</div>
+                    <div style="font-size: 1.8em; font-weight: bold; color: #6fdd9c; margin: 10px 0;">R$ <span id="totalInvestido">0,00</span></div>
+                </div>
+                <div class="card" style="background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, #ffffff 100%); border-left: 4px solid #667eea;">
+                    <div style="font-size: 0.85em; color: #666;">Número de Investimentos</div>
+                    <div style="font-size: 1.8em; font-weight: bold; color: #667eea; margin: 10px 0;" id="totalInvestimentos">0</div>
+                </div>
+                <div class="card" style="background: linear-gradient(135deg, rgba(118,75,162,0.1) 0%, #ffffff 100%); border-left: 4px solid #764ba2;">
+                    <div style="font-size: 0.85em; color: #666;">Maior Investimento</div>
+                    <div style="font-size: 1.8em; font-weight: bold; color: #764ba2; margin: 10px 0;">R$ <span id="maiorInvestimento">0,00</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">💹 Distribuição por Tipo</h3>
+            <div class="grafico-container">
+                <canvas id="graficoInvestimentos"></canvas>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">📋 Lista de Investimentos</h3>
+            <table class="tabela-consolidada" style="width: 100%;">
+                <thead>
+                    <tr style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold;">
+                        <th style="padding: 12px 16px; text-align: left;">Data</th>
+                        <th style="padding: 12px 16px; text-align: left;">Tipo</th>
+                        <th style="padding: 12px 16px; text-align: left;">Descrição</th>
+                        <th style="padding: 12px 16px; text-align: right;">Valor</th>
+                        <th style="padding: 12px 16px; text-align: center;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaInvestimentos">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- CONFIGURAÇÕES E RECEITAS -->
+    <div class="secao">
+        <h2>⚙️ Configurações e Receitas</h2>
+        <div class="form-grid">
+            <input type="number" id="saldoInicial" placeholder="Saldo Inicial (R$)" step="0.01" min="0">
+            <input type="number" id="rendaMensal" placeholder="Renda Mensal (R$)" step="0.01" min="0">
+            <button onclick="salvarConfigurações()" class="secondary">💾 Salvar Configurações</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">💰 Adicionar Receita</h3>
+            <form id="formReceita" style="display: contents;">
+                <div class="form-grid">
+                    <input type="date" id="dataReceita" placeholder="Data">
+                    <input type="text" id="descricaoReceita" placeholder="Descrição (ex: Salário)">
+                    <select id="categoriaReceita">
+                        <option value="">Selecione Categoria</option>
+                        <option value="Salário">💵 Salário</option>
+                        <option value="Freelance">💻 Freelance</option>
+                        <option value="Bônus">🎁 Bônus</option>
+                        <option value="Investimento">📈 Investimento</option>
+                        <option value="Outros">📌 Outros</option>
+                    </select>
+                    <input type="number" id="valorReceita" placeholder="Valor" step="0.01" min="0">
+                    <button type="button" onclick="adicionarReceita()">➕ Adicionar Receita</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabela de Receitas -->
+        <table id="tabelaReceitas" style="margin-top: 20px;">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th style="width: 80px;">Ação</th>
+                </tr>
+            </thead>
+            <tbody id="corpoReceitas"></tbody>
+        </table>
+    </div>
+
+    <!-- ALERTAS -->
+    <div id="containerAlertas" style="margin-top: 20px;"></div>
+
+    <!-- PENDENTES PARA PAGAMENTO -->
+    <div class="secao">
+        <h2>⚠️ Pendentes para Pagamento</h2>
+        <div id="containerPendentes"></div>
+    </div>
+
+    <!-- VISÃO CONSOLIDADA - Tabela Resumida -->
+    <div class="secao">
+        <h2>📋 Visão Geral (Tipo Excel)</h2>
+        <div style="overflow-x: auto;">
+            <table id="tabelaConsolidada" class="tabela-consolidada">
+                <thead>
+                    <tr style="background: #667eea; color: white; font-weight: bold;">
+                        <th style="width: 80px;">Data</th>
+                        <th style="width: 200px;">Descrição</th>
+                        <th style="width: 120px;">Categoria</th>
+                        <th style="width: 100px;">Tipo</th>
+                        <th style="width: 100px; text-align: right;">Valor</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoConsolidado"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- DESPESAS FIXAS -->
+    <div class="secao">
+        <h2>📌 Despesas Fixas (Mensais)</h2>
+        <div class="form-grid">
+            <input type="text" id="descricaoFixa" placeholder="Descrição (ex: Aluguel)">
+            <select id="categoriaFixa">
+                <option value="">Selecione Categoria</option>
+                <option value="Habitação">🏠 Habitação</option>
+                <option value="Transporte">🚗 Transporte</option>
+                <option value="Saúde">⚕️ Saúde</option>
+                <option value="Educação">📚 Educação</option>
+                <option value="Utilities">💡 Utilities</option>
+                <option value="Seguros">🛡️ Seguros</option>
+                <option value="Assinaturas">📺 Assinaturas</option>
+                <option value="Outros">📌 Outros</option>
+            </select>
+            <input type="number" id="valorFixo" placeholder="Valor Mensal" step="0.01" min="0">
+            <button onclick="adicionarFixa()">➕ Adicionar Fixa</button>
+        </div>
+
+        <!-- Tabela de Despesas Fixas -->
+        <table id="tabelaFixas">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">✓</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor Mensal</th>
+                    <th style="width: 80px;">Ação</th>
+                </tr>
+            </thead>
+            <tbody id="corpoFixas"></tbody>
+        </table>
+    </div>
+
+    <!-- DESPESAS VARIÁVEIS -->
+    <div class="secao">
+        <h2>📅 Despesas Variáveis (Este Mês)</h2>
+        <div class="form-grid">
+            <input type="date" id="data" placeholder="Data">
+            <input type="text" id="descricao" placeholder="Descrição (ex: Supermercado)">
+            <select id="categoria">
+                <option value="">Selecione Categoria</option>
+                <option value="Alimentação">🍔 Alimentação</option>
+                <option value="Transporte">🚗 Transporte</option>
+                <option value="Saúde">⚕️ Saúde</option>
+                <option value="Educação">📚 Educação</option>
+                <option value="Lazer">🎮 Lazer</option>
+                <option value="Utilities">💡 Utilities</option>
+                <option value="Compras">🛍️ Compras</option>
+                <option value="Outros">📌 Outros</option>
+            </select>
+            <input type="number" id="valor" placeholder="Valor" step="0.01" min="0">
+            <button onclick="adicionarVariavel()">➕ Adicionar Gasto</button>
+        </div>
+
+        <!-- Tabela de Despesas Variáveis -->
+        <table id="tabelaVariaveis">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">✓</th>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th style="width: 80px;">Ação</th>
+                </tr>
+            </thead>
+            <tbody id="corpoVariaveis"></tbody>
+        </table>
+    </div>
+
+    <!-- Resumo por Categoria -->
+    <div class="secao">
+        <h2>📊 Resumo por Categoria (Este Mês)</h2>
+        <div id="categoriaResumo" class="categoria-resumo"></div>
+    </div>
+
+    <!-- FILTRO E ANÁLISE POR PERÍODO -->
+    <div class="secao">
+        <h2>📅 Análise por Período</h2>
+        <div class="form-grid">
+            <input type="date" id="dataInicio" placeholder="Data Início">
+            <input type="date" id="dataFim" placeholder="Data Fim">
+            <button onclick="filtrarPorPeriodo()" class="secondary">🔍 Filtrar</button>
+            <button onclick="limparFiltro()" class="secondary">🔄 Limpar</button>
+        </div>
+        <div id="containerAnalisisePeriodo" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- COMPARATIVO MÊS A MÊS -->
+    <div class="secao">
+        <h2>📈 Comparativo Mês a Mês</h2>
+        <div id="containerComparativo" class="tabela-comparativa"></div>
+    </div>
+
+    <!-- RESUMO MENSAL DETALHADO -->
+    <div class="secao">
+        <h2>📋 Resumo Mensal Detalhado</h2>
+        <div class="form-grid">
+            <input type="month" id="mesSelecionado">
+            <button onclick="gerarResumoMensal()" class="secondary">📊 Gerar Resumo</button>
+        </div>
+        <div id="containerResumoMensal" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- 🟢 1. GRÁFICO DE EVOLUÇÃO DO SALDO -->
+    <div class="secao">
+        <h2>📊 Evolução do Saldo</h2>
+        <div class="grafico-container">
+            <canvas id="graficoEvolucaoSaldo"></canvas>
+        </div>
+    </div>
+
+    <!-- 🟢 2. SCORE DE SAÚDE FINANCEIRA -->
+    <div class="secao">
+        <h2>💚 Saúde Financeira</h2>
+        <div class="score-container">
+            <div class="score-circle">
+                <div class="score-valor" id="scoreValor">0</div>
+                <div class="score-label">Score</div>
+            </div>
+            <div class="score-detalhes">
+                <div class="score-metrica">
+                    <span>💾 Taxa de Economia:</span>
+                    <span id="metricaEconomia">0%</span>
+                    <span class="score-status" id="statusEconomia">❌</span>
+                </div>
+                <div class="score-metrica">
+                    <span>📌 Fixas/Receita:</span>
+                    <span id="metricaFixas">0%</span>
+                    <span class="score-status" id="statusFixas">❌</span>
+                </div>
+                <div class="score-metrica">
+                    <span>💎 Investimento/Receita:</span>
+                    <span id="metricaInvestimento">0%</span>
+                    <span class="score-status" id="statusInvestimento">❌</span>
+                </div>
+                <div class="score-recomendacao" id="scoreRecomendacao"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🟢 3. ALERTAS INTELIGENTES -->
+    <div class="secao">
+        <h2>🚨 Alertas Inteligentes</h2>
+        <div id="containerAlertasInteligentes"></div>
+    </div>
+
+    <!-- 🟢 4. PREVISÃO DE CAIXA -->
+    <div class="secao">
+        <h2>🔮 Previsão de Caixa</h2>
+        <div id="containerPrevisaoCaixa" class="comparacao-grid"></div>
+    </div>
+
+    <!-- 🟢 5. COMPARATIVO "VOCÊ VS VOCÊ" -->
+    <div class="secao">
+        <h2>📊 Comparativo Períodos</h2>
+        <div id="containerComparativoVoce" class="comparacao-grid"></div>
+    </div>
+
+    <!-- 🟢 6. METAS COM PROGRESSO -->
+    <div class="secao">
+        <h2>🎯 Metas com Progresso</h2>
+        <div class="form-grid">
+            <input type="text" id="nomeMeta" placeholder="Nome da categoria">
+            <input type="number" id="valorMeta" placeholder="Limite (R$)" step="0.01" min="0">
+            <button onclick="adicionarMeta()" class="secondary">➕ Adicionar Meta</button>
+        </div>
+        <div id="containerMetasProgresso" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- 🟢 7. RELATÓRIO AUTOMATIZADO -->
+    <div class="secao">
+        <h2>📄 Relatório Personalizado</h2>
+        <div class="form-grid">
+            <select id="tipoRelatorio">
+                <option value="">Selecione o tipo</option>
+                <option value="mensal">Relatório Mensal</option>
+                <option value="trimestral">Relatório Trimestral</option>
+                <option value="anual">Relatório Anual</option>
+            </select>
+            <button onclick="gerarRelatorioPersonalizado()" class="secondary">📋 Gerar Relatório</button>
+            <button onclick="exportarRelatorioJSON()" class="secondary">💾 Salvar JSON</button>
+        </div>
+        <div id="containerRelatorio" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- 🟢 8. DASHBOARD DE EFICIÊNCIA -->
+    <div class="secao">
+        <h2>⚡ Eficiência Financeira</h2>
+        <div id="containerEficiencia" class="eficiencia-grid"></div>
+    </div>
+
+    <!-- 🟢 9. MAPA DE DESPESAS (HEATMAP) -->
+    <div class="secao">
+        <h2>🔥 Mapa de Despesas</h2>
+        <div class="form-grid">
+            <select id="mesSelecionadoHeatmap">
+                <option value="">Selecione o mês</option>
+            </select>
+        </div>
+        <div id="containerHeatmap" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- 🟢 10. SEGMENTAÇÃO POR OBJETIVO -->
+    <div class="secao">
+        <h2>🎯 Objetivos Financeiros</h2>
+        <div class="form-grid">
+            <input type="text" id="nomeObjetivo" placeholder="Nome (ex: Fundo Emergência)">
+            <select id="tipoObjetivo">
+                <option value="">Tipo</option>
+                <option value="Emergência">Fundo de Emergência</option>
+                <option value="Aposentadoria">Aposentadoria</option>
+                <option value="Viagem">Viagem/Lazer</option>
+                <option value="Imóvel">Imóvel</option>
+                <option value="Carro">Carro</option>
+                <option value="Educação">Educação</option>
+                <option value="Outro">Outro</option>
+            </select>
+            <input type="number" id="metaObjetivo" placeholder="Meta (R$)" step="0.01" min="0">
+            <button onclick="adicionarObjetivo()" class="secondary">➕ Adicionar</button>
+        </div>
+        <div id="containerObjetivos" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="secao">
+        <h2>📈 Visualizações</h2>
+        <div class="graficos">
+            <div class="grafico-container">
+                <canvas id="graficoGastos"></canvas>
+            </div>
+            <div class="grafico-container">
+                <canvas id="graficoCategoria"></canvas>
+            </div>
+            <div class="grafico-container">
+                <canvas id="graficoMetas"></canvas>
+            </div>
+        </div>
+    </div>
+        <h2>🏷️ Categorias Customizadas</h2>
+        <div class="form-grid">
+            <input type="text" id="novaCategoria" placeholder="Nome da categoria (ex: Streaming)">
+            <input type="text" id="novaEmojiCategoria" placeholder="Emoji (ex: 📺)" maxlength="2">
+            <button class="secondary" onclick="adicionarCategoria()">➕ Adicionar Categoria</button>
+        </div>
+        <div id="categoriasContainer" class="categoria-resumo" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- Backup em Nuvem -->
+    <div class="secao">
+        <h2>☁️ Backup e Sincronização</h2>
+        <p style="color: #666; margin-bottom: 15px;">💡 Dica: Use para fazer backup ou transferir dados entre dispositivos</p>
+        <div class="form-grid">
+            <button class="secondary" onclick="fazarBackup()">💾 Fazer Backup (Download)</button>
+            <button class="secondary" onclick="document.getElementById('inputBackup').click();">📤 Restaurar Backup</button>
+            <input type="file" id="inputBackup" accept=".json" style="display: none;" onchange="restaurarBackup(event)">
+            <button class="secondary" onclick="sincronizarNuvem()">☁️ Sincronizar Nuvem</button>
+        </div>
+    </div>
+
+    <!-- Histórico de Transações -->
+    <div class="secao">
+        <h2>📋 Histórico de Transações</h2>
+        <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="filtroDescricao" placeholder="🔍 Buscar por descrição..." style="grid-column: 1;">
+            <div style="display: flex; gap: 10px;">
+                <button class="secondary" onclick="exportarCSV()">📥 CSV</button>
+                <button class="secondary" onclick="gerarRelatorioPDF()">📄 PDF</button>
+                <button class="secondary" onclick="limparTudo()" style="background: linear-gradient(135deg, #ff1744 0%, #f50057 100%); color: white;">🗑️ Limpar</button>
+            </div>
+        </div>
+        <div id="tabelaContainer" class="lista-transacoes"></div>
+    </div>
+</div>
+
+<!-- Script principal (carregado APÓS seguranca.js) -->
+<script src="script.js"></script>
+
+</body>
+</html>
