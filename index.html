@@ -22,6 +22,7 @@
     <!-- Scripts de segurança (PRIMEIRO!) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="seguranca.js"></script>
+    <script src="financiamento.js"></script>
     
     <!-- Scripts de biblioteca -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -144,6 +145,87 @@
                 <tbody id="tabelaInvestimentos">
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- 🟢 FINANCIAMENTOS (NOVO!) -->
+    <div class="secao">
+        <h2>📊 Financiamentos e Empréstimos</h2>
+        
+        <!-- Abas de Financiamento -->
+        <div class="abas-financiamento" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; flex-wrap: wrap;">
+            <button class="aba-btn aba-ativa" onclick="mudarAbaFinanciamento('criar')">➕ Novo Financiamento</button>
+            <button class="aba-btn" onclick="mudarAbaFinanciamento('listar')">📋 Meus Financiamentos</button>
+            <button class="aba-btn" onclick="mudarAbaFinanciamento('simulador')">🧮 Simulador</button>
+        </div>
+
+        <!-- ABA 1: CRIAR NOVO FINANCIAMENTO -->
+        <div id="aba-criar-financiamento" class="aba-financiamento" style="display: block;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">Criar Novo Financiamento</h3>
+            <div class="form-grid">
+                <input type="text" id="nomeFinanciamento" placeholder="Nome (ex: Honda Civic)">
+                <input type="number" id="principalFinanciamento" placeholder="Valor Inicial (R$)" step="0.01" min="0">
+                <input type="number" id="taxaMensalFinanciamento" placeholder="Taxa Mensal (%)" step="0.01" min="0" value="1.5">
+                <input type="number" id="mesesFinanciamento" placeholder="Meses" min="1" value="60">
+                <select id="tipoFinanciamento">
+                    <option value="price">Tabela Price (Parcelas iguais)</option>
+                    <option value="sac">SAC (Amortização constante)</option>
+                </select>
+                <input type="date" id="dataFinanciamento">
+                <button onclick="criarNovoFinanciamento()" class="secondary" style="grid-column: 1 / -1;">✅ Criar Financiamento</button>
+            </div>
+        </div>
+
+        <!-- ABA 2: LISTAR FINANCIAMENTOS -->
+        <div id="aba-listar-financiamento" class="aba-financiamento" style="display: none;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">Seus Financiamentos</h3>
+            <div id="listaFinanciamentos" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                <p style="grid-column: 1 / -1; color: #999; text-align: center;">Nenhum financiamento criado ainda</p>
+            </div>
+        </div>
+
+        <!-- ABA 3: SIMULADOR -->
+        <div id="aba-simulador-financiamento" class="aba-financiamento" style="display: none;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">Simulador de Financiamento</h3>
+            <div class="form-grid">
+                <input type="number" id="simularPrincipal" placeholder="Valor (R$)" step="0.01" min="0" value="100000">
+                <input type="number" id="simularTaxa" placeholder="Taxa Mensal (%)" step="0.01" min="0" value="1.5">
+                <input type="number" id="simularMeses" placeholder="Meses" min="1" value="60">
+                <select id="simularTipo">
+                    <option value="price">Tabela Price</option>
+                    <option value="sac">SAC</option>
+                </select>
+            </div>
+            <div id="resultadoSimulador" style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; display: none;">
+                <h4>📊 Resultado da Simulação</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                    <div class="card" style="border-left: 4px solid #667eea;">
+                        <div style="font-size: 0.9em; color: #666;">Valor da Parcela</div>
+                        <div style="font-size: 1.5em; font-weight: bold; color: #667eea;">R$ <span id="simValorParcela">0,00</span></div>
+                    </div>
+                    <div class="card" style="border-left: 4px solid #6fdd9c;">
+                        <div style="font-size: 0.9em; color: #666;">Total com Juros</div>
+                        <div style="font-size: 1.5em; font-weight: bold; color: #6fdd9c;">R$ <span id="simTotalComJuros">0,00</span></div>
+                    </div>
+                    <div class="card" style="border-left: 4px solid #ff6b6b;">
+                        <div style="font-size: 0.9em; color: #666;">Total de Juros</div>
+                        <div style="font-size: 1.5em; font-weight: bold; color: #ff6b6b;">R$ <span id="simTotalJuros">0,00</span></div>
+                    </div>
+                </div>
+                <table style="width: 100%; margin-top: 20px; font-size: 0.9em;">
+                    <thead>
+                        <tr style="background: #667eea; color: white;">
+                            <th style="padding: 8px;">Parcela</th>
+                            <th style="padding: 8px; text-align: right;">Valor</th>
+                            <th style="padding: 8px; text-align: right;">Juros</th>
+                            <th style="padding: 8px; text-align: right;">Amortização</th>
+                            <th style="padding: 8px; text-align: right;">Saldo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaSimulador" style="max-height: 300px; overflow-y: auto; display: block;">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

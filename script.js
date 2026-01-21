@@ -2542,3 +2542,352 @@ function atualizarTituloPagina() {
 
 // Atualizar título periodicamente
 setInterval(atualizarTituloPagina, 60000);
+
+// ===== INTEGRAÇÃO DO MÓDULO DE FINANCIAMENTO =====
+
+// Variável global para o gerenciador
+let gerenciadorFinanciamento = null;
+
+// Inicializar o gerenciador quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof GerenciadorFinanciamento !== 'undefined') {
+        gerenciadorFinanciamento = new GerenciadorFinanciamento();
+        atualizarListaFinanciamentos();
+        // Atualizar simulador em tempo real
+        document.getElementById('simularPrincipal').addEventListener('change', atualizarSimulador);
+        document.getElementById('simularTaxa').addEventListener('change', atualizarSimulador);
+        document.getElementById('simularMeses').addEventListener('change', atualizarSimulador);
+        document.getElementById('simularTipo').addEventListener('change', atualizarSimulador);
+    }
+});
+
+// Mudar entre abas
+function mudarAbaFinanciamento(aba) {
+    // Esconder todas as abas
+    document.getElementById('aba-criar-financiamento').style.display = 'none';
+    document.getElementById('aba-listar-financiamento').style.display = 'none';
+    document.getElementById('aba-simulador-financiamento').style.display = 'none';
+
+    // Remover classe ativa de todos os botões
+    document.querySelectorAll('.aba-btn').forEach(btn => {
+        btn.classList.remove('aba-ativa');
+    });
+
+    // Mostrar aba selecionada
+    if (aba === 'criar') {
+        document.getElementById('aba-criar-financiamento').style.display = 'block';
+        document.querySelectorAll('.aba-btn')[0].classList.add('aba-ativa');
+    } else if (aba === 'listar') {
+        document.getElementById('aba-listar-financiamento').style.display = 'block';
+        document.querySelectorAll('.aba-btn')[1].classList.add('aba-ativa');
+        atualizarListaFinanciamentos();
+    } else if (aba === 'simulador') {
+        document.getElementById('aba-simulador-financiamento').style.display = 'block';
+        document.querySelectorAll('.aba-btn')[2].classList.add('aba-ativa');
+        atualizarSimulador();
+    }
+}
+
+// Criar novo financiamento
+function criarNovoFinanciamento() {
+    if (!gerenciadorFinanciamento) return;
+
+    const nome = document.getElementById('nomeFinanciamento').value.trim();
+    const principal = parseFloat(document.getElementById('principalFinanciamento').value);
+    const taxa = parseFloat(document.getElementById('taxaMensalFinanciamento').value);
+    const meses = parseInt(document.getElementById('mesesFinanciamento').value);
+    const tipo = document.getElementById('tipoFinanciamento').value;
+    const data = document.getElementById('dataFinanciamento').value;
+
+    // Validação
+    if (!nome || !principal || !taxa || !meses || !tipo) {
+        alert('⚠️ Preencha todos os campos!');
+        return;
+    }
+
+    try {
+        const financiamento = gerenciadorFinanciamento.criarFinanciamento({
+            nome,
+            principal,
+            taxaMensal: taxa / 100,
+            meses,
+            tipo,
+            dataInicio: data || new Date().toISOString().split('T')[0]
+        });
+
+        alert(`✅ Financiamento "${nome}" criado com sucesso!\nParcela: R$ ${financiamento.parcelas[0].valor.toFixed(2)}`);
+
+        // Limpar formulário
+        document.getElementById('nomeFinanciamento').value = '';
+        document.getElementById('principalFinanciamento').value = '';
+        document.getElementById('taxaMensalFinanciamento').value = '1.5';
+        document.getElementById('mesesFinanciamento').value = '60';
+        document.getElementById('dataFinanciamento').value = '';
+
+        // Atualizar lista
+        mudarAbaFinanciamento('listar');
+    } catch (erro) {
+        alert(`❌ Erro: ${erro.message}`);
+    }
+}
+
+// Atualizar lista de financiamentos
+function atualizarListaFinanciamentos() {
+    if (!gerenciadorFinanciamento) return;
+
+    const container = document.getElementById('listaFinanciamentos');
+    const financiamentos = gerenciadorFinanciamento.listarFinanciamentos();
+
+    if (financiamentos.length === 0) {
+        container.innerHTML = '<p style="grid-column: 1 / -1; color: #999; text-align: center;">Nenhum financiamento criado ainda</p>';
+        return;
+    }
+
+    container.innerHTML = financiamentos.map(fin => {
+        const resumo = gerenciadorFinanciamento.obterResumoFinanciamento(fin.id);
+        const percentualPago = (resumo.parcelasPagas / resumo.totalParcelas) * 100;
+        const parcela1 = fin.parcelas[0];
+
+        return `
+            <div class="carta-financiamento">
+                <div class="carta-header">
+                    <div>
+                        <div class="carta-titulo">${fin.nome}</div>
+                    </div>
+                    <span class="carta-tipo">${fin.tipo === 'price' ? 'Price' : 'SAC'}</span>
+                </div>
+
+                <div class="carta-info-row">
+                    <div class="carta-info-item">
+                        <div class="carta-info-label">💰 Valor da Parcela</div>
+                        <div class="carta-info-valor">R$ ${parcela1.valor.toFixed(2)}</div>
+                    </div>
+                    <div class="carta-info-item">
+                        <div class="carta-info-label">📅 Total de Parcelas</div>
+                        <div class="carta-info-valor">${fin.parcelas.length}</div>
+                    </div>
+                </div>
+
+                <div class="carta-info-row">
+                    <div class="carta-info-item">
+                        <div class="carta-info-label">✅ Pagas</div>
+                        <div class="carta-info-valor" style="color: #6fdd9c;">${resumo.parcelasPagas}</div>
+                    </div>
+                    <div class="carta-info-item">
+                        <div class="carta-info-label">⏳ Pendentes</div>
+                        <div class="carta-info-valor" style="color: #ff6b6b;">${resumo.parcelasRestantes}</div>
+                    </div>
+                </div>
+
+                <div class="barra-progresso">
+                    <div class="barra-progresso-preenchimento" style="width: ${percentualPago}%"></div>
+                </div>
+
+                <div class="carta-status">
+                    ${resumo.parcelasRestantes === 0 ? '✅ <strong>FINALIZADO</strong>' : `⏳ Próxima parcela: ${resumo.proxima_data || 'N/A'}`}
+                </div>
+
+                <div class="carta-acoes">
+                    <button class="btn-pequeno btn-detalhe" onclick="abrirModalFinanciamento('${fin.id}')">📊 Detalhes</button>
+                    <button class="btn-pequeno btn-pagamento" onclick="registrarPagamentoAba('${fin.id}')">💳 Registrar Pagamento</button>
+                    <button class="btn-pequeno btn-exportar" onclick="exportarFinanciamentoCSV('${fin.id}')">📥 Exportar</button>
+                    <button class="btn-pequeno btn-deletar" onclick="deletarFinanciamentoConfirm('${fin.id}')">🗑️ Deletar</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Abrir modal com detalhes
+function abrirModalFinanciamento(id) {
+    if (!gerenciadorFinanciamento) return;
+
+    const fin = gerenciadorFinanciamento.financiamentos.find(f => f.id === id);
+    if (!fin) return;
+
+    const resumo = gerenciadorFinanciamento.obterResumoFinanciamento(id);
+
+    let html = `
+        <div class="modal-financiamento" id="modal-${id}" style="display: block;">
+            <div class="modal-conteudo">
+                <span class="modal-fechar" onclick="fecharModalFinanciamento('${id}')">&times;</span>
+                
+                <h2>${fin.nome}</h2>
+                <p style="color: #666; margin-bottom: 20px;">Tipo: <strong>${fin.tipo === 'price' ? 'Tabela Price' : 'SAC'}</strong></p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div class="card">
+                        <div style="font-size: 0.9em; color: #666;">Principal</div>
+                        <div style="font-size: 1.4em; font-weight: bold;">R$ ${fin.principal.toFixed(2)}</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 0.9em; color: #666;">Taxa Mensal</div>
+                        <div style="font-size: 1.4em; font-weight: bold;">${(fin.taxaMensal * 100).toFixed(2)}%</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 0.9em; color: #666;">Total com Juros</div>
+                        <div style="font-size: 1.4em; font-weight: bold; color: #ff6b6b;">R$ ${resumo.totalComJuros.toFixed(2)}</div>
+                    </div>
+                    <div class="card">
+                        <div style="font-size: 0.9em; color: #666;">Total de Juros</div>
+                        <div style="font-size: 1.4em; font-weight: bold; color: #667eea;">R$ ${resumo.totalJuros.toFixed(2)}</div>
+                    </div>
+                </div>
+
+                <h3 style="color: #667eea; margin: 20px 0 10px 0;">📋 Tabela de Amortização</h3>
+                <table style="width: 100%; font-size: 0.9em; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #667eea; color: white;">
+                            <th style="padding: 8px; text-align: left;">#</th>
+                            <th style="padding: 8px; text-align: right;">Valor</th>
+                            <th style="padding: 8px; text-align: right;">Juros</th>
+                            <th style="padding: 8px; text-align: right;">Amortização</th>
+                            <th style="padding: 8px; text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    fin.parcelas.forEach((p, idx) => {
+        const statusEmoji = p.pago ? '✅' : '⏳';
+        html += `
+            <tr style="border-bottom: 1px solid #eee; background: ${p.pago ? 'rgba(111, 221, 156, 0.1)' : 'transparent'};">
+                <td style="padding: 8px;">${idx + 1}</td>
+                <td style="padding: 8px; text-align: right;">R$ ${p.valor.toFixed(2)}</td>
+                <td style="padding: 8px; text-align: right;">R$ ${p.juros.toFixed(2)}</td>
+                <td style="padding: 8px; text-align: right;">R$ ${p.amortizacao.toFixed(2)}</td>
+                <td style="padding: 8px; text-align: center;">
+                    <button class="btn-pequeno ${p.pago ? 'btn-exportar' : 'btn-pagamento'}" 
+                            onclick="registrarPagamento('${id}', ${idx + 1}, ${p.valor})"
+                            style="font-size: 0.75em; padding: 4px 8px;">
+                        ${p.pago ? '✅ Pago' : '💳 Pagar'}
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+// Fechar modal
+function fecharModalFinanciamento(id) {
+    const modal = document.getElementById(`modal-${id}`);
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Registrar pagamento
+function registrarPagamento(id, numero, valor) {
+    if (!gerenciadorFinanciamento) return;
+
+    const fin = gerenciadorFinanciamento.financiamentos.find(f => f.id === id);
+    if (!fin) return;
+
+    const parcela = fin.parcelas[numero - 1];
+    if (parcela.pago) {
+        alert('✅ Esta parcela já foi paga!');
+        return;
+    }
+
+    gerenciadorFinanciamento.registrarPagamentoParcela(id, numero, valor);
+    alert(`✅ Pagamento da parcela ${numero} registrado!`);
+
+    // Fechar modal e atualizar
+    fecharModalFinanciamento(id);
+    atualizarListaFinanciamentos();
+}
+
+function registrarPagamentoAba(id) {
+    const fin = gerenciadorFinanciamento.financiamentos.find(f => f.id === id);
+    if (!fin) return;
+
+    const proximaParcela = fin.parcelas.find(p => !p.pago);
+    if (!proximaParcela) {
+        alert('✅ Todas as parcelas foram pagas!');
+        return;
+    }
+
+    const numero = fin.parcelas.indexOf(proximaParcela) + 1;
+    registrarPagamento(id, numero, proximaParcela.valor);
+}
+
+// Exportar para CSV
+function exportarFinanciamentoCSV(id) {
+    if (!gerenciadorFinanciamento) return;
+
+    const fin = gerenciadorFinanciamento.financiamentos.find(f => f.id === id);
+    if (!fin) return;
+
+    let csv = 'Parcela,Data Vencimento,Valor,Juros,Amortização,Saldo,Status\n';
+
+    fin.parcelas.forEach((p, idx) => {
+        csv += `${idx + 1},"${p.dataVencimento || ''}",${p.valor.toFixed(2)},${p.juros.toFixed(2)},${p.amortizacao.toFixed(2)},${p.saldoRestante.toFixed(2)},"${p.pago ? 'Pago' : 'Pendente'}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fin.nome}_amortizacao.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+// Deletar financiamento
+function deletarFinanciamentoConfirm(id) {
+    if (confirm('⚠️ Tem certeza que deseja deletar este financiamento?')) {
+        gerenciadorFinanciamento.deletarFinanciamento(id);
+        atualizarListaFinanciamentos();
+        alert('✅ Financiamento deletado!');
+    }
+}
+
+// Atualizar simulador
+function atualizarSimulador() {
+    if (!gerenciadorFinanciamento) return;
+
+    const principal = parseFloat(document.getElementById('simularPrincipal').value) || 0;
+    const taxa = (parseFloat(document.getElementById('simularTaxa').value) || 0) / 100;
+    const meses = parseInt(document.getElementById('simularMeses').value) || 1;
+    const tipo = document.getElementById('simularTipo').value;
+
+    if (principal <= 0 || taxa < 0 || meses <= 0) {
+        document.getElementById('resultadoSimulador').style.display = 'none';
+        return;
+    }
+
+    const resultado = gerenciadorFinanciamento.simularFinanciamento({
+        principal,
+        taxaMensal: taxa,
+        meses,
+        tipo
+    });
+
+    document.getElementById('simValorParcela').textContent = resultado.parcelas[0].valor.toFixed(2);
+    document.getElementById('simTotalComJuros').textContent = resultado.totalComJuros.toFixed(2);
+    document.getElementById('simTotalJuros').textContent = resultado.totalJuros.toFixed(2);
+
+    // Montar tabela
+    const tbody = document.getElementById('tabelaSimulador');
+    tbody.innerHTML = resultado.parcelas.slice(0, 20).map((p, idx) => `
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 8px;">${idx + 1}</td>
+            <td style="padding: 8px; text-align: right;">R$ ${p.valor.toFixed(2)}</td>
+            <td style="padding: 8px; text-align: right;">R$ ${p.juros.toFixed(2)}</td>
+            <td style="padding: 8px; text-align: right;">R$ ${p.amortizacao.toFixed(2)}</td>
+            <td style="padding: 8px; text-align: right;">R$ ${p.saldoRestante.toFixed(2)}</td>
+        </tr>
+    `).join('');
+
+    document.getElementById('resultadoSimulador').style.display = 'block';
+}
+
