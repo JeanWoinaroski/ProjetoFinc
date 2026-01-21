@@ -376,15 +376,25 @@ class GerenciadorSeguranca {
         const hashArmazenado = localStorage.getItem('_hash_senha');
 
         if (!hashArmazenado) {
-            // Primeira vez - definir senha
-            localStorage.setItem('_hash_senha', hashInformado);
-            this.sessaoAtiva = true;
-            this.tentativasLogin = 0;
-            this.ultimaAtividade = Date.now();
-            this.registrarAuditoria('SESSAO_CRIADA');
-            this.iniciarMonitorSessao();
-            console.log('✅ Sessão criada com sucesso!');
-            return true;
+            // Primeira vez - definir senha padrão (Jean@2025)
+            const SENHA_PADRAO = 'Jean@2025';
+            const hashPadrao = this.hash256(SENHA_PADRAO);
+            localStorage.setItem('_hash_senha', hashPadrao);
+            
+            // Verificar se digitou a senha padrão
+            if (hashInformado === hashPadrao) {
+                this.sessaoAtiva = true;
+                this.tentativasLogin = 0;
+                this.ultimaAtividade = Date.now();
+                this.registrarAuditoria('SESSAO_CRIADA_COM_PADRAO');
+                this.iniciarMonitorSessao();
+                console.log('✅ Sessão aberta com senha padrão!');
+                return true;
+            } else {
+                this.tentativasLogin++;
+                alert(`❌ Senha incorreta!\n\nTentativas restantes: ${3 - this.tentativasLogin}`);
+                return false;
+            }
         }
 
         if (hashInformado === hashArmazenado) {
