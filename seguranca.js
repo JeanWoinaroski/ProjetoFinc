@@ -157,7 +157,7 @@ class GerenciadorSeguranca {
         return texto && texto.trim().length >= 3 && texto.length <= 200;
     }
 
-    // ========== SANITIZAÇÃO XSS ==========
+    // ========== SANITIZAÇÃO XSS ===========
 
     /**
      * Sanitiza texto para evitar XSS - escapa HTML
